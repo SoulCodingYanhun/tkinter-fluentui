@@ -1,7 +1,8 @@
-from typing import Dict, Any, Tuple
+from typing import Dict, Any, Tuple, List
 import tkinter as tk
 import tkinter.font as tkfont
 
+# 颜色定义
 COLORS = {
     'primary': '#0078d4',
     'primary_dark': '#005a9e',
@@ -106,13 +107,14 @@ DEFAULT_BUTTON_STYLE = create_button_style(
     disabled_fg_color=COLORS['gray']
 )
 
-def apply_theme(component: 'FluentComponent', theme: Dict[str, Any]):
+def apply_theme(component: Any, theme: Dict[str, Any]):
     if hasattr(component, 'style') and isinstance(component.style, dict):
         component.style.update(theme)
     if hasattr(component, 'apply_style'):
         component.apply_style()
 
 class ThemeManager:
+    _instance = None
     _current_theme = 'default'
     _themes = {
         'default': {
@@ -123,6 +125,12 @@ class ThemeManager:
             'font_size': FONT_SIZES['md'],
         }
     }
+
+    @classmethod
+    def get_instance(cls):
+        if cls._instance is None:
+            cls._instance = cls()
+        return cls._instance
 
     @classmethod
     def get_current_theme(cls) -> Dict[str, Any]:
@@ -148,6 +156,15 @@ def get_system_font_families() -> List[str]:
 
 def create_style_class(widget_type: str, **kwargs) -> str:
     style = tk.Style()
-    class_name = f"{widget_type}.TCustom.{uuid.uuid4().hex[:8]}"
+    class_name = f"{widget_type}.TCustom.{hash(tuple(kwargs.items()))}"
     style.configure(class_name, **kwargs)
     return class_name
+
+# 创建一个全局实例
+theme_manager = ThemeManager.get_instance()
+
+def get_current_theme():
+    return theme_manager.get_current_theme()
+
+def set_theme(theme_name):
+    theme_manager.set_theme(theme_name)
