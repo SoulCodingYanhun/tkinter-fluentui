@@ -1,28 +1,16 @@
 from .default import DEFAULT_THEME
 from .dark import DARK_THEME
-from .custom import CustomTheme
+from ..core.styles import ThemeManager
 
-__all__ = ['DEFAULT_THEME', 'DARK_THEME', 'CustomTheme', 'get_theme', 'set_theme', 'create_theme']
-
-_current_theme = DEFAULT_THEME
-
-def get_theme():
-    global _current_theme
-    return _current_theme
-
-def set_theme(theme):
-    global _current_theme
-    if isinstance(theme, dict):
-        _current_theme = theme
-    elif theme == 'dark':
-        _current_theme = DARK_THEME
-    elif theme == 'default':
-        _current_theme = DEFAULT_THEME
+def set_theme(theme_name):
+    if theme_name == 'default':
+        ThemeManager.set_theme(DEFAULT_THEME)
+    elif theme_name == 'dark':
+        ThemeManager.set_theme(DARK_THEME)
     else:
-        raise ValueError("Invalid theme. Use 'default', 'dark', or a custom theme dict.")
+        raise ValueError(f"Unknown theme: {theme_name}")
 
-def create_theme(name, base_theme='default', **kwargs):
-    base = DEFAULT_THEME if base_theme == 'default' else DARK_THEME
-    new_theme = base.copy()
-    new_theme.update(kwargs)
-    return CustomTheme(name, new_theme)
+def get_current_theme():
+    return ThemeManager.get_current_theme()
+
+__all__ = ['DEFAULT_THEME', 'DARK_THEME', 'set_theme', 'get_current_theme']

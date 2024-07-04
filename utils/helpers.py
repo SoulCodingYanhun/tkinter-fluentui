@@ -1,73 +1,83 @@
+# tkinter_fluentui/utils/helpers.py
+
 import uuid
 from datetime import datetime
-from typing import Callable
 import time
 
-def generate_id() -> str:
+def generate_id():
     """
-    Generate a unique ID.
+    生成一个唯一的ID。
+
+    :return: 唯一ID字符串
     """
     return str(uuid.uuid4())
 
-def format_date(date: datetime, format_str: str = "%Y-%m-%d") -> str:
+def format_date(date, format='%Y-%m-%d'):
     """
-    Format a date according to the given format string.
-    """
-    return date.strftime(format_str)
+    格式化日期。
 
-def debounce(wait: float):
+    :param date: datetime对象或者包含时间戳的float
+    :param format: 日期格式字符串
+    :return: 格式化后的日期字符串
     """
-    Decorator to debounce a function.
+    if isinstance(date, float):
+        date = datetime.fromtimestamp(date)
+    return date.strftime(format)
+
+def debounce(wait):
+    """
+    装饰器工厂函数，用于创建一个防抖动装饰器。
+
+    :param wait: 等待时间（秒）
+    :return: 防抖动装饰器
     """
     def decorator(fn):
-        last_called = None
-        timer = None
-
+        last_called = [0]
         def debounced(*args, **kwargs):
-            nonlocal last_called, timer
-
-            def call_func():
-                nonlocal last_called
-                last_called = time.time()
+            now = time.time()
+            if now - last_called[0] >= wait:
+                last_called[0] = now
                 return fn(*args, **kwargs)
-
-            if timer is not None:
-                timer.cancel()
-
-            if last_called is None or time.time() - last_called >= wait:
-                return call_func()
-            else:
-                timer = threading.Timer(wait - (time.time() - last_called), call_func)
-                timer.start()
-
         return debounced
     return decorator
 
-def throttle(wait: float):
+def clamp(value, min_value, max_value):
     """
-    Decorator to throttle a function.
-    """
-    def decorator(fn):
-        last_called = 0
+    将值限制在指定范围内。
 
-        def throttled(*args, **kwargs):
-            nonlocal last_called
-            now = time.time()
-            if now - last_called >= wait:
-                last_called = now
-                return fn(*args, **kwargs)
-
-        return throttled
-    return decorator
-
-def clamp(value: float, min_value: float, max_value: float) -> float:
-    """
-    Clamp a value between a minimum and maximum.
+    :param value: 要限制的值
+    :param min_value: 最小值
+    :param max_value: 最大值
+    :return: 限制后的值
     """
     return max(min_value, min(value, max_value))
 
-def lerp(start: float, end: float, t: float) -> float:
+def lerp(start, end, alpha):
     """
-    Linear interpolation between start and end values.
+    线性插值函数。
+
+    :param start: 起始值
+    :param end: 结束值
+    :param alpha: 插值系数 (0.0 到 1.0)
+    :return: 插值结果
     """
-    return start + (end - start) * t
+    return start + (end - start) * alpha
+
+def hex_to_rgb(hex_color):
+    """
+    将十六进制颜色转换为RGB元组。
+
+    :param hex_color: 十六进制颜色字符串 (例如 "#FF0000")
+    :return: RGB元组 (例如 (255, 0, 0))
+    """
+    hex_color = hex_color.lstrip('#')
+    return tuple(int(hex_color[i:i+2], 16) for i in (0, 2, 4))
+
+def rgb_to_hex(rgb):
+    """
+    将RGB元组转换为十六进制颜色。
+
+    :param rgb: RGB元组 (例如 (255, 0, 0))
+    :return: 十六进制颜色字符串 (例如 "#FF0000")
+    """
+    return '#{:02x}{:02x}{:02x}'.format(*rgb)

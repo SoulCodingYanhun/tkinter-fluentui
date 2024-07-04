@@ -1,27 +1,27 @@
-class CustomTheme:
-    def __init__(self, name, theme_dict):
-        self.name = name
-        self.theme = theme_dict
+def create_custom_theme(**kwargs):
+    custom_theme = {
+        'colors': {
+            'primary': '#0078d4',
+            'secondary': '#2b88d8',
+            'background': '#ffffff',
+            'foreground': '#000000',
+            'success': '#107c10',
+            'warning': '#ffb900',
+            'error': '#d83b01',
+        },
+        'fonts': {
+            'primary': 'Segoe UI',
+            'secondary': 'Arial',
+        },
+        'font_sizes': {
+            'small': 10,
+            'medium': 12,
+            'large': 14,
+        },
+    }
 
-    def __getitem__(self, key):
-        return self.theme[key]
+    for key, value in kwargs.items():
+        if key in custom_theme:
+            custom_theme[key].update(value)
 
-    def __setitem__(self, key, value):
-        self.theme[key] = value
-
-    def get(self, key, default=None):
-        return self.theme.get(key, default)
-
-    def update(self, **kwargs):
-        self.theme.update(kwargs)
-
-    def copy(self):
-        return CustomTheme(f"{self.name}_copy", self.theme.copy())
-
-    def __repr__(self):
-        return f"CustomTheme(name='{self.name}')"
-
-def create_custom_theme(name, base_theme, **overrides):
-    new_theme = base_theme.copy()
-    new_theme.update(overrides)
-    return CustomTheme(name, new_theme)
+    return custom_theme
