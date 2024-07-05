@@ -1,19 +1,11 @@
-# core/__init__.py
-
-from .base import FluentComponent
-from .styles import (
-    COLORS,
-    FONT_SIZES,
-    ThemeManager,
-    apply_theme,
-    create_style
-)
+from .base import FluentComponent, FluentFrame, FluentWidget
+from .styles import FluentStyle, apply_theme, get_current_theme
 
 __all__ = [
     'FluentComponent',
-    'COLORS',
-    'FONT_SIZES',
-    'ThemeManager',
+    'FluentFrame',
+    'FluentWidget',
+    'FluentStyle',
     'apply_theme',
-    'create_style'
+    'get_current_theme'
 ]

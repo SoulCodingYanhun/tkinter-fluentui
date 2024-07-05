@@ -1,32 +1,25 @@
 import tkinter as tk
-from ..core.base import FluentComponent
-from ..core.styles import apply_theme
+from tkinter import ttk
+from ..core import FluentWidget
 
-
-class Button(FluentComponent):
-    def __init__(self, master=None, text="", command=None, **kwargs):
+class Button(FluentWidget):
+    def __init__(self, master=None, text="", command=None, style="TButton", **kwargs):
         super().__init__(master, **kwargs)
-        self.text = text
-        self.command = command
-        self.create_widget()
+        self.widget = ttk.Button(master, text=text, command=command, style=style)
 
     def create_widget(self):
-        self.widget = tk.Button(self.master, text=self.text, command=self.command)
-        apply_theme(self.widget)
+        return self.widget
 
-
-class LinkButton(FluentComponent):
+class LinkButton(FluentWidget):
     def __init__(self, master=None, text="", url="", **kwargs):
         super().__init__(master, **kwargs)
-        self.text = text
         self.url = url
-        self.create_widget()
+        self.widget = ttk.Label(master, text=text, cursor="hand2", style="Link.TLabel")
+        self.widget.bind("<Button-1>", self._open_url)
 
     def create_widget(self):
-        self.widget = tk.Label(self.master, text=self.text, cursor="hand2")
-        self.widget.bind("<Button-1>", self.open_url)
-        apply_theme(self.widget)
+        return self.widget
 
-    def open_url(self, event):
+    def _open_url(self, event):
         import webbrowser
-        webbrowser.open_new(self.url)
+        webbrowser.open(self.url)

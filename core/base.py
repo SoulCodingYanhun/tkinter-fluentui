@@ -4,7 +4,7 @@ import uuid
 
 class FluentComponent:
     def __init__(self, master=None, id=None, className=None, style=None):
-        self.master = master if master else tk.Tk()
+        self.master = master
         self.id = id if id else str(uuid.uuid4())
         self.className = className
         self.style = style
@@ -25,10 +25,6 @@ class FluentComponent:
         if self.widget:
             self.widget.place(**kwargs)
 
-    def destroy(self):
-        if self.widget:
-            self.widget.destroy()
-
     def configure(self, **kwargs):
         if self.widget:
             self.widget.configure(**kwargs)
@@ -41,15 +37,11 @@ class FluentComponent:
         if self.widget:
             self.widget.update()
 
-    def apply_style(self):
-        if self.style and self.widget:
-            for key, value in self.style.items():
-                try:
-                    self.widget[key] = value
-                except tk.TclError:
-                    print(f"警告: 无法设置样式属性 {key}")
-
-    def get_widget(self):
-        if not self.widget:
-            self.create_widget()
+class FluentFrame(FluentComponent):
+    def create_widget(self):
+        self.widget = ttk.Frame(self.master, style=self.style)
         return self.widget
+
+class FluentWidget(FluentComponent):
+    def create_widget(self):
+        raise NotImplementedError("FluentWidget subclasses must implement create_widget method")

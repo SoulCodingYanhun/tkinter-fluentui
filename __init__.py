@@ -1,10 +1,19 @@
 import tkinter as tk
 from tkinter import ttk
-import sys
 
 # 导入核心模块
-from .core.base import FluentComponent
-from .core.styles import apply_theme, COLORS, FONT_SIZES
+from .core import FluentComponent, FluentFrame, FluentWidget, FluentStyle, apply_theme, get_current_theme
+
+# 导入主题模块
+from .themes import DEFAULT_THEME, DARK_THEME, CustomTheme, get_theme, add_theme, list_themes
+
+# 导入工具函数
+from .utils import (
+    announce, set_aria_label, set_aria_description, enable_screen_reader, disable_screen_reader,
+    is_screen_reader_enabled, generate_id, format_date, debounce, throttle, create_font,
+    get_widget_width, get_widget_height, center_window, create_tooltip, validate_email,
+    limit_text_length, rgb_to_hex, hex_to_rgb
+)
 
 # 导入组件
 from .components.buttons import Button, LinkButton
@@ -26,80 +35,73 @@ from .components.misc import Separator, Skeleton
 from .components.pickers import FloatingPicker, ExtendedPicker
 from .components.annotations import Annotation, Coachmark
 
-# 导入主题
-from .themes import set_theme, get_current_theme
-from .themes.default import DEFAULT_THEME
-from .themes.dark import DARK_THEME
-
-# 导入工具函数
-from .utils import accessibility, helpers
-
 __version__ = '0.1.0'
 
 
-def init(theme='default', master=None):
+def init(theme='default', use_ttk=True):
     """
-    初始化 tkinter_fluentui 库。
-    
-    :param theme: 要使用的主题名称，默认为 'default'
-    :param master: tkinter 主窗口，如果为 None 则创建一个新窗口
-    :return: 初始化后的主窗口
+    初始化 tkinter_fluentui 库
+    :param theme: 主题名称或主题字典
+    :param use_ttk: 是否使用 ttk 小部件（默认为 True）
     """
-    if master is None:
-        master = tk.Tk()
-
-    if theme == 'default':
-        set_theme(DEFAULT_THEME)
-    elif theme == 'dark':
-        set_theme(DARK_THEME)
+    if isinstance(theme, str):
+        theme_dict = get_theme(theme)
+    elif isinstance(theme, dict):
+        theme_dict = theme
     else:
-        raise ValueError(f"Unsupported theme: {theme}")
+        raise ValueError("Theme must be a string or a dictionary")
 
-    style = ttk.Style()
-    style.theme_use('clam')  # 使用 'clam' 主题作为基础
+    apply_theme(theme_dict)
 
-    # 配置全局字体
-    default_font = ('Segoe UI', 10)
-    master.option_add('*Font', default_font)
+    if use_ttk:
+        # 替换 tkinter 的基本小部件为 ttk 版本
+        tk.Button = ttk.Button
+        tk.Checkbutton = ttk.Checkbutton
+        tk.Entry = ttk.Entry
+        tk.Frame = ttk.Frame
+        tk.Label = ttk.Label
+        tk.LabelFrame = ttk.LabelFrame
+        tk.Menubutton = ttk.Menubutton
+        tk.PanedWindow = ttk.PanedWindow
+        tk.Radiobutton = ttk.Radiobutton
+        tk.Scale = ttk.Scale
+        tk.Scrollbar = ttk.Scrollbar
+        tk.Spinbox = ttk.Spinbox
+        tk.Combobox = ttk.Combobox
+        tk.Notebook = ttk.Notebook
+        tk.Progressbar = ttk.Progressbar
+        tk.Separator = ttk.Separator
+        tk.Sizegrip = ttk.Sizegrip
+        tk.Treeview = ttk.Treeview
 
-    # 配置全局颜色
-    master.configure(bg=get_current_theme()['colors']['background'])
 
-    # 设置 DPI 感知（仅在 Windows 上）
-    if sys.platform.startswith('win'):
-        try:
-            from ctypes import windll
-            windll.shcore.SetProcessDpiAwareness(1)
-        except ImportError:
-            print("无法导入 ctypes 模块，DPI 感知可能无法正常工作。")
-        except AttributeError:
-            print("无法设置 DPI 感知，可能是 Windows 版本不支持此功能。")
-        except Exception as e:
-            print(f"设置 DPI 感知时发生未知错误: {e}")
+# 在导入时自动初始化默认主题
+init()
 
-    return master
-
-
-# 导出所有公共组件和函数
 __all__ = [
-    'FluentComponent', 'apply_theme', 'COLORS', 'FONT_SIZES',
-    'Button', 'LinkButton', 'TextInput', 'SearchBox',
-    'Checkbox', 'RadioGroup', 'Dropdown', 'Slider', 'Switch', 'ColorPicker',
-    'DetailsList', 'GroupedList', 'List',
-    'Breadcrumb', 'CommandBar', 'NavMenu', 'Tabs',
-    'ProgressBar', 'Spinner',
-    'Dialog', 'Modal',
-    'MessageBar', 'TeachingBubble', 'Tooltip',
-    'Panel', 'Form',
-    'Calendar', 'DatePicker',
-    'PersonaGroup', 'PersonCard',
-    'Image', 'Icon',
-    'Stack',
-    'Label', 'Text',
-    'Separator', 'Skeleton',
-    'FloatingPicker', 'ExtendedPicker',
+    # 核心类
+    'FluentComponent', 'FluentFrame', 'FluentWidget', 'FluentStyle',
+
+    # 主题相关
+    'DEFAULT_THEME', 'DARK_THEME', 'CustomTheme', 'get_theme', 'add_theme', 'list_themes',
+    'apply_theme', 'get_current_theme',
+
+    # 工具函数
+    'announce', 'set_aria_label', 'set_aria_description', 'enable_screen_reader',
+    'disable_screen_reader', 'is_screen_reader_enabled', 'generate_id', 'format_date',
+    'debounce', 'throttle', 'create_font', 'get_widget_width', 'get_widget_height',
+    'center_window', 'create_tooltip', 'validate_email', 'limit_text_length',
+    'rgb_to_hex', 'hex_to_rgb',
+
+    # 组件
+    'Button', 'LinkButton', 'TextInput', 'SearchBox', 'Checkbox', 'RadioGroup',
+    'Dropdown', 'Slider', 'Switch', 'ColorPicker', 'DetailsList', 'GroupedList',
+    'List', 'Breadcrumb', 'CommandBar', 'NavMenu', 'Tabs', 'ProgressBar', 'Spinner',
+    'Dialog', 'Modal', 'MessageBar', 'TeachingBubble', 'Tooltip', 'Panel', 'Form',
+    'Calendar', 'DatePicker', 'PersonaGroup', 'PersonCard', 'Image', 'Icon', 'Stack',
+    'Label', 'Text', 'Separator', 'Skeleton', 'FloatingPicker', 'ExtendedPicker',
     'Annotation', 'Coachmark',
-    'set_theme', 'get_current_theme',
-    'accessibility', 'helpers',
+
+    # 初始化函数
     'init'
 ]

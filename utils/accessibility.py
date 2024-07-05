@@ -1,78 +1,52 @@
-# tkinter_fluentui/utils/accessibility.py
-
 import tkinter as tk
+from typing import Optional
 
 class AccessibilityManager:
-    _instance = None
+    def __init__(self):
+        self._screen_reader_enabled = False
+        self._last_announcement = ""
 
-    def __new__(cls):
-        if cls._instance is None:
-            cls._instance = super(AccessibilityManager, cls).__new__(cls)
-            cls._instance._last_announcement = None
-        return cls._instance
+    def enable_screen_reader(self):
+        self._screen_reader_enabled = True
 
-    def announce(self, message):
-        """
-        向屏幕阅读器发送通知。
-        在实际应用中，这个函数应该与操作系统的辅助功能API集成。
-        目前，我们只是打印消息作为模拟。
+    def disable_screen_reader(self):
+        self._screen_reader_enabled = False
 
-        :param message: 要宣布的消息
-        """
-        print(f"Screen reader announcement: {message}")
-        self._last_announcement = message
+    def is_screen_reader_enabled(self) -> bool:
+        return self._screen_reader_enabled
 
-    def get_last_announcement(self):
-        """
-        获取最后一次宣布的消息。用于测试目的。
+    def announce(self, message: str):
+        if self._screen_reader_enabled:
+            self._last_announcement = message
+            # 在实际应用中，这里应该调用操作系统的屏幕阅读器 API
+            print(f"Screen Reader: {message}")
 
-        :return: 最后一次宣布的消息
-        """
+    def get_last_announcement(self) -> str:
         return self._last_announcement
 
-ACCESSIBILITY_MANAGER = AccessibilityManager()
+    def set_aria_label(self, widget: tk.Widget, label: str):
+        widget.configure(text=label)  # 使用 text 属性作为 aria-label 的替代
+        widget.configure(takefocus=1)  # 确保小部件可以接收焦点
 
-def announce(message):
-    """
-    向屏幕阅读器发送通知的便捷函数。
+    def set_aria_description(self, widget: tk.Widget, description: str):
+        widget.configure(tooltip=description)  # 使用自定义的 tooltip 属性
 
-    :param message: 要宣布的消息
-    """
-    ACCESSIBILITY_MANAGER.announce(message)
+accessibility_manager = AccessibilityManager()
 
-def set_aria_label(widget, label):
-    """
-    设置widget的aria-label属性。
-    在Tkinter中，我们可以使用`winfo_class()`方法给widget添加自定义属性。
+def announce(message: str):
+    accessibility_manager.announce(message)
 
-    :param widget: 要设置标签的Tkinter widget
-    :param label: aria-label的值
-    """
-    widget.winfo_class()  # 确保widget已经初始化
-    widget.tk.call("wm", "attributes", widget._w, "-aria-label", label)
+def set_aria_label(widget: tk.Widget, label: str):
+    accessibility_manager.set_aria_label(widget, label)
 
-def get_aria_label(widget):
-    """
-    获取widget的aria-label属性。
+def set_aria_description(widget: tk.Widget, description: str):
+    accessibility_manager.set_aria_description(widget, description)
 
-    :param widget: 要获取标签的Tkinter widget
-    :return: aria-label的值，如果没有设置则返回None
-    """
-    widget.winfo_class()  # 确保widget已经初始化
-    return widget.tk.call("wm", "attributes", widget._w, "-aria-label")
+def enable_screen_reader():
+    accessibility_manager.enable_screen_reader()
 
-class KeyboardNavigable:
-    """
-    可以通过键盘导航的widget的Mixin类。
-    """
-    def __init__(self):
-        self.bind('<Tab>', self._on_tab)
-        self.bind('<Shift-Tab>', self._on_shift_tab)
+def disable_screen_reader():
+    accessibility_manager.disable_screen_reader()
 
-    def _on_tab(self, event):
-        event.widget.tk_focusNext().focus()
-        return "break"
-
-    def _on_shift_tab(self, event):
-        event.widget.tk_focusPrev().focus()
-        return "break"
+def is_screen_reader_enabled() -> bool:
+    return accessibility_manager.is_screen_reader_enabled()

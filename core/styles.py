@@ -1,75 +1,37 @@
-import tkinter as tk
 from tkinter import ttk
-from tkinter import font as tkfont
+from typing import Dict, Any
 
-COLORS = {
-    'primary': '#0078d4',
-    'secondary': '#2b88d8',
-    'success': '#107c10',
-    'warning': '#ffb900',
-    'error': '#d83b01',
-    'black': '#000000',
-    'white': '#ffffff',
-    'gray': '#605e5c',
-    'light_gray': '#f3f2f1',
-}
+class FluentStyle:
+    def __init__(self):
+        self.style = ttk.Style()
+        self._current_theme = "default"
 
-FONT_SIZES = {
-    'tiny': 8,
-    'small': 10,
-    'medium': 12,
-    'large': 14,
-    'extra_large': 18,
-    'huge': 24,
-}
+    def configure(self, style_name: str, **kwargs):
+        self.style.configure(style_name, **kwargs)
 
-class ThemeManager:
-    _current_theme = {}
+    def map(self, style_name: str, **kwargs):
+        self.style.map(style_name, **kwargs)
 
-    @classmethod
-    def set_theme(cls, theme):
-        cls._current_theme = theme
+    def layout(self, style_name: str, layout_spec):
+        self.style.layout(style_name, layout_spec)
 
-    @classmethod
-    def get_current_theme(cls):
-        return cls._current_theme
+    def apply_theme(self, theme: Dict[str, Any]):
+        for style_name, config in theme.items():
+            if 'configure' in config:
+                self.configure(style_name, **config['configure'])
+            if 'map' in config:
+                self.map(style_name, **config['map'])
+            if 'layout' in config:
+                self.layout(style_name, config['layout'])
+        self._current_theme = theme.get('name', 'custom')
 
-def apply_theme(component, theme=None):
-    if theme is None:
-        theme = ThemeManager.get_current_theme()
+    def get_current_theme(self) -> str:
+        return self._current_theme
 
-    if not theme:
-        return
+fluent_style = FluentStyle()
 
-    if isinstance(component, tk.Widget):
-        widget = component
-    elif hasattr(component, 'widget'):
-        widget = component.widget
-    else:
-        return
+def apply_theme(theme: Dict[str, Any]):
+    fluent_style.apply_theme(theme)
 
-    bg_color = theme.get('colors', {}).get('background', COLORS['white'])
-    fg_color = theme.get('colors', {}).get('foreground', COLORS['black'])
-    font_family = theme.get('fonts', {}).get('primary', 'Segoe UI')
-    font_size = theme.get('font_sizes', {}).get('medium', FONT_SIZES['medium'])
-
-    widget.configure(bg=bg_color, fg=fg_color)
-
-    custom_font = tkfont.Font(family=font_family, size=font_size)
-    widget.configure(font=custom_font)
-
-    if isinstance(widget, ttk.Widget):
-        style = ttk.Style()
-        style.configure(f'{widget.winfo_class()}.TWidget', background=bg_color, foreground=fg_color)
-        widget.configure(style=f'{widget.winfo_class()}.TWidget')
-
-def create_style(bg_color=None, fg_color=None, font_family=None, font_size=None):
-    style = {}
-    if bg_color:
-        style['background'] = bg_color
-    if fg_color:
-        style['foreground'] = fg_color
-    if font_family or font_size:
-        font = tkfont.Font(family=font_family or 'Segoe UI', size=font_size or FONT_SIZES['medium'])
-        style['font'] = font
-    return style
+def get_current_theme() -> str:
+    return fluent_style.get_current_theme()

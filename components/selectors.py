@@ -1,291 +1,170 @@
-# tkinter_fluentui/components/selectors.py
+import tkinter as tk
+from tkinter import ttk
+from ..core import FluentWidget
+import colorsys
 
-from ..core.base import FluentWidget
-from ..core.styles import apply_theme, THEME_MANAGER
-from ..utils.accessibility import KeyboardNavigable
-
-
-class Checkbox(FluentWidget, KeyboardNavigable):
-    def __init__(self, master, label, checked=False, command=None, **kwargs):
-        super().__init__(master, width=200, height=30, **kwargs)
-        self.label = label
-        self.checked = checked
+class Checkbox(FluentWidget):
+    def __init__(self, master=None, text="", variable=None, command=None, **kwargs):
+        super().__init__(master, **kwargs)
+        self.variable = variable or tk.BooleanVar()
         self.command = command
+        self.widget = ttk.Checkbutton(master, text=text, variable=self.variable, command=self._on_toggle, style="Fluent.TCheckbutton")
 
-        self.bind("<ButtonPress-1>", self._on_click)
-        self.bind("<space>", self._on_click)
+    def create_widget(self):
+        return self.widget
 
-        apply_theme(self, bg='bg', fg='fg')
-        self.redraw()
-
-    def _on_click(self, event):
-        self.checked = not self.checked
-        self.redraw()
+    def _on_toggle(self):
         if self.command:
             self.command()
 
-    def _draw(self):
-        super()._draw()
-        width, height = self.winfo_width(), self.winfo_height()
+    def get(self):
+        return self.variable.get()
 
-        # 绘制复选框
-        box_size = 20
-        self.draw_rounded_rectangle(self, 5, (height - box_size) // 2, 5 + box_size, (height + box_size) // 2, 3,
-                                    fill=THEME_MANAGER.get('accent') if self.checked else THEME_MANAGER.get('bg'),
-                                    outline=THEME_MANAGER.get('fg'))
+    def set(self, value):
+        self.variable.set(value)
 
-        # 绘制勾选标记
-        if self.checked:
-            self.create_line(8, height // 2, 13, height // 2 + 5, 22, height // 2 - 5, fill=THEME_MANAGER.get('bg'),
-                             width=2)
-
-        # 绘制标签
-        font = THEME_MANAGER.get('font')
-        self.create_text(30, height // 2, text=self.label, anchor="w", fill=THEME_MANAGER.get('fg'), font=font)
-
-
-class RadioGroup(FluentWidget, KeyboardNavigable):
-    def __init__(self, master, options, selected=None, command=None, **kwargs):
-        super().__init__(master, width=200, height=30 * len(options), **kwargs)
-        self.options = options
-        self.selected = selected
+class RadioGroup(FluentWidget):
+    def __init__(self, master=None, options=None, variable=None, command=None, **kwargs):
+        super().__init__(master, **kwargs)
+        self.options = options or []
+        self.variable = variable or tk.StringVar()
         self.command = command
+        self.widget = ttk.Frame(master)
+        self._create_radiobuttons()
 
-        self.bind("<ButtonPress-1>", self._on_click)
-        self.bind("<Up>", self._on_up)
-        self.bind("<Down>", self._on_down)
+    def create_widget(self):
+        return self.widget
 
-        apply_theme(self, bg='bg', fg='fg')
-        self.redraw()
-
-    def _on_click(self, event):
-        y = event.y
-        selected_index = y // 30
-        if 0 <= selected_index < len(self.options):
-            self.selected = self.options[selected_index]
-            self.redraw()
-            if self.command:
-                self.command(self.selected)
-
-    def _on_up(self, event):
-        if self.selected:
-            current_index = self.options.index(self.selected)
-            if current_index > 0:
-                self.selected = self.options[current_index - 1]
-                self.redraw()
-                if self.command:
-                    self.command(self.selected)
-
-    def _on_down(self, event):
-        if self.selected:
-            current_index = self.options.index(self.selected)
-            if current_index < len(self.options) - 1:
-                self.selected = self.options[current_index + 1]
-                self.redraw()
-                if self.command:
-                    self.command(self.selected)
-
-    def _draw(self):
-        super()._draw()
-        width, height = self.winfo_width(), self.winfo_height()
-
-        for i, option in enumerate(self.options):
-            y = i * 30
-
-            # 绘制单选按钮
-            self.create_oval(5, y + 5, 25, y + 25, outline=THEME_MANAGER.get('fg'))
-            if option == self.selected:
-                self.create_oval(9, y + 9, 21, y + 21, fill=THEME_MANAGER.get('accent'))
-
-            # 绘制标签
-            font = THEME_MANAGER.get('font')
-            self.create_text(30, y + 15, text=option, anchor="w", fill=THEME_MANAGER.get('fg'), font=font)
-
-
-class Dropdown(FluentWidget, KeyboardNavigable):
-    def __init__(self, master, options, placeholder="Select an item", command=None, **kwargs):
-        super().__init__(master, width=200, height=30, **kwargs)
-        self.options = options
-        self.placeholder = placeholder
-        self.command = command
-        self.selected = None
-        self._open = False
-
-        self.bind("<ButtonPress-1>", self._on_click)
-        self.bind("<space>", self._on_click)
-
-        apply_theme(self, bg='bg', fg='fg')
-        self.redraw()
-
-    def _on_click(self, event):
-        self._open = not self._open
-        if self._open:
-            self._show_options()
-        else:
-            self._hide_options()
-        self.redraw()
-
-    def _show_options(self):
-        options_window = tk.Toplevel(self)
-        options_window.overrideredirect(True)
-        options_window.geometry(f"200x{len(self.options) * 30}+{self.winfo_rootx()}+{self.winfo_rooty() + 30}")
+    def _create_radiobuttons(self):
         for option in self.options:
-            btn = tk.Button(options_window, text=option, command=lambda o=option: self._select_option(o))
-            btn.pack(fill=tk.X)
+            rb = ttk.Radiobutton(self.widget, text=option, variable=self.variable, value=option, command=self._on_select, style="Fluent.TRadiobutton")
+            rb.pack(anchor="w", padx=5, pady=2)
 
-    def _hide_options(self):
-        if self.winfo_children():
-            self.winfo_children()[0].destroy()
-
-    def _select_option(self, option):
-        self.selected = option
-        self._open = False
-        self._hide_options()
-        self.redraw()
+    def _on_select(self):
         if self.command:
-            self.command(self.selected)
+            self.command()
 
-    def _draw(self):
-        super()._draw()
-        width, height = self.winfo_width(), self.winfo_height()
+    def get(self):
+        return self.variable.get()
 
-        # 绘制下拉框
-        self.draw_rounded_rectangle(self, 0, 0, width, height, THEME_MANAGER.get('radius', 5),
-                                    fill=THEME_MANAGER.get('bg'), outline=THEME_MANAGER.get('fg'))
+    def set(self, value):
+        self.variable.set(value)
 
-        # 绘制文本
-        font = THEME_MANAGER.get('font')
-        text = self.selected if self.selected else self.placeholder
-        self.create_text(10, height // 2, text=text, anchor="w", fill=THEME_MANAGER.get('fg'), font=font)
-
-        # 绘制箭头
-        arrow_color = THEME_MANAGER.get('fg')
-        self.create_polygon(width - 20, height // 2 - 5, width - 10, height // 2 - 5, width - 15, height // 2 + 5,
-                            fill=arrow_color)
-
-
-class Slider(FluentWidget, KeyboardNavigable):
-    def __init__(self, master, min_value=0, max_value=100, value=50, command=None, **kwargs):
-        super().__init__(master, width=200, height=30, **kwargs)
-        self.min_value = min_value
-        self.max_value = max_value
-        self.value = value
+class Dropdown(FluentWidget):
+    def __init__(self, master=None, options=None, variable=None, command=None, **kwargs):
+        super().__init__(master, **kwargs)
+        self.options = options or []
+        self.variable = variable or tk.StringVar()
         self.command = command
+        self.widget = ttk.Combobox(master, values=self.options, textvariable=self.variable, style="Fluent.TCombobox")
+        self.widget.bind("<<ComboboxSelected>>", self._on_select)
 
-        self.bind("<ButtonPress-1>", self._on_click)
-        self.bind("<B1-Motion>", self._on_drag)
-        self.bind("<Left>", self._decrease)
-        self.bind("<Right>", self._increase)
+    def create_widget(self):
+        return self.widget
 
-        apply_theme(self, bg='bg', fg='fg')
-        self.redraw()
-
-    def _on_click(self, event):
-        self._update_value(event.x)
-
-    def _on_drag(self, event):
-        self._update_value(event.x)
-
-    def _update_value(self, x):
-        width = self.winfo_width() - 20  # 20 is the diameter of the slider thumb
-        ratio = max(0, min(1, (x - 10) / width))
-        self.value = self.min_value + ratio * (self.max_value - self.min_value)
-        self.redraw()
+    def _on_select(self, event):
         if self.command:
-            self.command(self.value)
+            self.command()
 
-    def _decrease(self, event):
-        self.value = max(self.min_value, self.value - 1)
-        self.redraw()
-        if self.command:
-            self.command(self.value)
+    def get(self):
+        return self.variable.get()
 
-    def _increase(self, event):
-        self.value = min(self.max_value, self.value + 1)
-        self.redraw()
-        if self.command:
-            self.command(self.value)
+    def set(self, value):
+        self.variable.set(value)
 
-    def _draw(self):
-        super()._draw()
-        width, height = self.winfo_width(), self.winfo_height()
-
-        # 绘制滑动条轨道
-        self.create_rectangle(10, height // 2 - 2, width - 10, height // 2 + 2, fill=THEME_MANAGER.get('fg'))
-
-        # 绘制滑块
-        ratio = (self.value - self.min_value) / (self.max_value - self.min_value)
-        x = 10 + ratio * (width - 20)
-        self.create_oval(x - 10, height // 2 - 10, x + 10, height // 2 + 10, fill=THEME_MANAGER.get('accent'))
-
-
-class Switch(FluentWidget, KeyboardNavigable):
-    def __init__(self, master, label="", on=False, command=None, **kwargs):
-        super().__init__(master, width=60, height=30, **kwargs)
-        self.label = label
-        self.on = on
+class Slider(FluentWidget):
+    def __init__(self, master=None, from_=0, to=100, variable=None, command=None, orientation="horizontal", **kwargs):
+        super().__init__(master, **kwargs)
+        self.variable = variable or tk.DoubleVar()
         self.command = command
+        self.widget = ttk.Scale(master, from_=from_, to=to, variable=self.variable, command=self._on_slide, orient=orientation, style="Fluent.TScale")
 
-        self.bind("<ButtonPress-1>", self._on_click)
-        self.bind("<space>", self._on_click)
+    def create_widget(self):
+        return self.widget
 
-        apply_theme(self, bg='bg', fg='fg')
-        self.redraw()
-
-    def _on_click(self, event):
-        self.on = not self.on
-        self.redraw()
+    def _on_slide(self, value):
         if self.command:
-            self.command(self.on)
+            self.command(float(value))
 
-    def _draw(self):
-        super()._draw()
-        width, height = self.winfo_width(), self.winfo_height()
+    def get(self):
+        return self.variable.get()
 
-        # 绘制开关背景
-        bg_color = THEME_MANAGER.get('accent') if self.on else THEME_MANAGER.get('fg')
-        self.draw_rounded_rectangle(self, 0, 0, width, height, height // 2, fill=bg_color)
+    def set(self, value):
+        self.variable.set(value)
 
-        # 绘制开关滑块
-        slider_x = width - 25 if self.on else 5
-        self.create_oval(slider_x, 5, slider_x + 20, height - 5, fill=THEME_MANAGER.get('bg'))
+class Switch(FluentWidget):
+    def __init__(self, master=None, text="", variable=None, command=None, **kwargs):
+        super().__init__(master, **kwargs)
+        self.variable = variable or tk.BooleanVar()
+        self.command = command
+        self.widget = ttk.Frame(master)
+        self._create_switch()
 
-        # 绘制标签
-        if self.label:
-            font = THEME_MANAGER.get('font')
-            self.create_text(width + 10, height // 2, text=self.label, anchor="w", fill=THEME_MANAGER.get('fg'),
-                             font=font)
+    def create_widget(self):
+        return self.widget
 
+    def _create_switch(self):
+        self.switch = ttk.Checkbutton(self.widget, style="Switch.TCheckbutton", variable=self.variable, command=self._on_toggle)
+        self.switch.pack(side=tk.LEFT)
+        if self.text:
+            self.label = ttk.Label(self.widget, text=self.text)
+            self.label.pack(side=tk.LEFT, padx=(5, 0))
 
-class ColorPicker(FluentWidget, KeyboardNavigable):
-    def __init__(self, master, color="#000000", command=None, **kwargs):
-        super().__init__(master, width=200, height=30, **kwargs)
+    def _on_toggle(self):
+        if self.command:
+            self.command()
+
+    def get(self):
+        return self.variable.get()
+
+    def set(self, value):
+        self.variable.set(value)
+
+class ColorPicker(FluentWidget):
+    def __init__(self, master=None, color=None, command=None, **kwargs):
+        super().__init__(master, **kwargs)
+        self.color = color or "#000000"
+        self.command = command
+        self.widget = ttk.Frame(master)
+        self._create_color_picker()
+
+    def create_widget(self):
+        return self.widget
+
+    def _create_color_picker(self):
+        self.color_display = tk.Canvas(self.widget, width=30, height=30, bg=self.color, highlightthickness=1, highlightbackground="black")
+        self.color_display.pack(side=tk.LEFT)
+        self.color_display.bind("<Button-1>", self._open_color_chooser)
+
+        self.color_entry = ttk.Entry(self.widget, width=10)
+        self.color_entry.pack(side=tk.LEFT, padx=(5, 0))
+        self.color_entry.insert(0, self.color)
+        self.color_entry.bind("<Return>", self._update_color_from_entry)
+        self.color_entry.bind("<FocusOut>", self._update_color_from_entry)
+
+    def _open_color_chooser(self, event):
+        color = tk.colorchooser.askcolor(color=self.color, title="Choose color")
+        if color[1]:
+            self.set_color(color[1])
+
+    def _update_color_from_entry(self, event):
+        color = self.color_entry.get()
+        if self._is_valid_color(color):
+            self.set_color(color)
+        else:
+            self.color_entry.delete(0, tk.END)
+            self.color_entry.insert(0, self.color)
+
+    def _is_valid_color(self, color):
+        return len(color) == 7 and color[0] == "#" and all(c in "0123456789ABCDEFabcdef" for c in color[1:])
+
+    def set_color(self, color):
         self.color = color
-        self.command = command
-
-        self.bind("<ButtonPress-1>", self._on_click)
-        self.bind("<space>", self._on_click)
-
-        apply_theme(self, bg='bg', fg='fg')
-        self.redraw()
-
-    def _on_click(self, event):
-        # 在实际应用中，这里应该打开一个颜色选择对话框
-        # 由于tkinter没有内置的颜色选择器，这里我们只是循环预定义的颜色
-        colors = ['#FF0000', '#00FF00', '#0000FF', '#FFFF00', '#FF00FF', '#00FFFF']
-        self.color = colors[(colors.index(self.color) + 1) % len(colors)]
-        self.redraw()
+        self.color_display.config(bg=color)
+        self.color_entry.delete(0, tk.END)
+        self.color_entry.insert(0, color)
         if self.command:
-            self.command(self.color)
+            self.command(color)
 
-    def _draw(self):
-        super()._draw()
-        width, height = self.winfo_width(), self.winfo_height()
-
-        # 绘制颜色预览框
-        self.draw_rounded_rectangle(self, 5, 5, width - 5, height - 5, THEME_MANAGER.get('radius', 5),
-                                    fill=self.color, outline=THEME_MANAGER.get('fg'))
-
-        # 绘制颜色值文本
-        font = THEME_MANAGER.get('font')
-        self.create_text(width // 2, height // 2, text=self.color, fill=THEME_MANAGER.get('fg'), font=font)
+    def get_color(self):
+        return self.color

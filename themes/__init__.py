@@ -1,16 +1,23 @@
 from .default import DEFAULT_THEME
 from .dark import DARK_THEME
-from ..core.styles import ThemeManager
+from .custom import CustomTheme
 
-def set_theme(theme_name):
-    if theme_name == 'default':
-        ThemeManager.set_theme(DEFAULT_THEME)
-    elif theme_name == 'dark':
-        ThemeManager.set_theme(DARK_THEME)
-    else:
-        raise ValueError(f"Unknown theme: {theme_name}")
+__all__ = ['DEFAULT_THEME', 'DARK_THEME', 'CustomTheme']
 
-def get_current_theme():
-    return ThemeManager.get_current_theme()
+# 全局主题字典
+THEMES = {
+    'default': DEFAULT_THEME,
+    'dark': DARK_THEME
+}
 
-__all__ = ['DEFAULT_THEME', 'DARK_THEME', 'set_theme', 'get_current_theme']
+def get_theme(name: str):
+    """获取指定名称的主题"""
+    return THEMES.get(name, DEFAULT_THEME)
+
+def add_theme(name: str, theme: dict):
+    """添加新主题"""
+    THEMES[name] = theme
+
+def list_themes():
+    """列出所有可用主题"""
+    return list(THEMES.keys())

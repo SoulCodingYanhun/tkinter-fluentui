@@ -1,39 +1,25 @@
-# tkinter_fluentui/utils/helpers.py
-
 import uuid
-from datetime import datetime
 import time
+from typing import Callable, Any, Optional
+import tkinter as tk
+from tkinter import font as tkfont
 
-def generate_id():
-    """
-    生成一个唯一的ID。
-
-    :return: 唯一ID字符串
-    """
+def generate_id() -> str:
+    """生成唯一ID"""
     return str(uuid.uuid4())
 
-def format_date(date, format='%Y-%m-%d'):
-    """
-    格式化日期。
+def format_date(date: Any, format_str: str = '%Y-%m-%d') -> str:
+    """格式化日期"""
+    return date.strftime(format_str)
 
-    :param date: datetime对象或者包含时间戳的float
-    :param format: 日期格式字符串
-    :return: 格式化后的日期字符串
+def debounce(wait: float) -> Callable:
     """
-    if isinstance(date, float):
-        date = datetime.fromtimestamp(date)
-    return date.strftime(format)
-
-def debounce(wait):
-    """
-    装饰器工厂函数，用于创建一个防抖动装饰器。
-
+    装饰器：防抖函数
     :param wait: 等待时间（秒）
-    :return: 防抖动装饰器
     """
-    def decorator(fn):
-        last_called = [0]
-        def debounced(*args, **kwargs):
+    def decorator(fn: Callable) -> Callable:
+        last_called = [0.0]
+        def debounced(*args: Any, **kwargs: Any) -> Any:
             now = time.time()
             if now - last_called[0] >= wait:
                 last_called[0] = now
@@ -41,43 +27,73 @@ def debounce(wait):
         return debounced
     return decorator
 
-def clamp(value, min_value, max_value):
+def throttle(wait: float) -> Callable:
     """
-    将值限制在指定范围内。
+    装饰器：节流函数
+    :param wait: 等待时间（秒）
+    """
+    def decorator(fn: Callable) -> Callable:
+        last_called = [0.0]
+        def throttled(*args: Any, **kwargs: Any) -> Any:
+            now = time.time()
+            if now - last_called[0] >= wait:
+                last_called[0] = now
+                return fn(*args, **kwargs)
+        return throttled
+    return decorator
 
-    :param value: 要限制的值
-    :param min_value: 最小值
-    :param max_value: 最大值
-    :return: 限制后的值
-    """
-    return max(min_value, min(value, max_value))
+def create_font(family: str, size: int, weight: str = 'normal', slant: str = 'roman') -> tkfont.Font:
+    """创建字体对象"""
+    return tkfont.Font(family=family, size=size, weight=weight, slant=slant)
 
-def lerp(start, end, alpha):
-    """
-    线性插值函数。
+def get_widget_width(widget: tk.Widget) -> int:
+    """获取小部件的宽度"""
+    widget.update_idletasks()
+    return widget.winfo_width()
 
-    :param start: 起始值
-    :param end: 结束值
-    :param alpha: 插值系数 (0.0 到 1.0)
-    :return: 插值结果
-    """
-    return start + (end - start) * alpha
+def get_widget_height(widget: tk.Widget) -> int:
+    """获取小部件的高度"""
+    widget.update_idletasks()
+    return widget.winfo_height()
 
-def hex_to_rgb(hex_color):
-    """
-    将十六进制颜色转换为RGB元组。
+def center_window(window: tk.Tk, width: int, height: int):
+    """将窗口居中"""
+    screen_width = window.winfo_screenwidth()
+    screen_height = window.winfo_screenheight()
+    x = (screen_width - width) // 2
+    y = (screen_height - height) // 2
+    window.geometry(f'{width}x{height}+{x}+{y}')
 
-    :param hex_color: 十六进制颜色字符串 (例如 "#FF0000")
-    :return: RGB元组 (例如 (255, 0, 0))
-    """
+def create_tooltip(widget: tk.Widget, text: str):
+    """为小部件创建工具提示"""
+    tooltip = tk.Label(widget.master, text=text, background="#ffffe0", relief="solid", borderwidth=1)
+    tooltip.place_forget()
+
+    def enter(event):
+        tooltip.lift(aboveThis=widget)
+        tooltip.place(x=widget.winfo_rootx(), y=widget.winfo_rooty() + widget.winfo_height())
+
+    def leave(event):
+        tooltip.place_forget()
+
+    widget.bind("<Enter>", enter)
+    widget.bind("<Leave>", leave)
+
+def validate_email(email: str) -> bool:
+    """简单的电子邮件验证"""
+    import re
+    pattern = r'^[\w\.-]+@[\w\.-]+\.\w+$'
+    return re.match(pattern, email) is not None
+
+def limit_text_length(text: str, max_length: int) -> str:
+    """限制文本长度，超出部分用省略号替代"""
+    return (text[:max_length-3] + '...') if len(text) > max_length else text
+
+def rgb_to_hex(r: int, g: int, b: int) -> str:
+    """RGB颜色值转换为十六进制颜色代码"""
+    return '#{:02x}{:02x}{:02x}'.format(r, g, b)
+
+def hex_to_rgb(hex_color: str) -> tuple:
+    """十六进制颜色代码转换为RGB颜色值"""
     hex_color = hex_color.lstrip('#')
     return tuple(int(hex_color[i:i+2], 16) for i in (0, 2, 4))
-
-def rgb_to_hex(rgb):
-    """
-    将RGB元组转换为十六进制颜色。
-
-    :param rgb: RGB元组 (例如 (255, 0, 0))
-    :return: 十六进制颜色字符串 (例如 "#FF0000")
-    """
-    return '#{:02x}{:02x}{:02x}'.format(*rgb)
